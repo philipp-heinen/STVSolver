@@ -27,6 +27,10 @@ void Votes::read_vote(std::vector<unsigned int>vote)
 	votes.push_back(vote);
 }
 
+std::vector<double> Votes::count_candidate_votes_gregory(std::vector<double> weights)
+{
+}
+
 std::vector<double> Votes::count_candidate_votes_meek(std::vector<double> weights)
 {
 	if(weights.size() != n_cand)
