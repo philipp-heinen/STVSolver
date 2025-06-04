@@ -1,16 +1,24 @@
 class ComputeWinners
 {
 	public:
-		ComputeWinners(Votes *election_result, unsigned int number_seats, std::string counting_method, std::string quota_type);
+		ComputeWinners(Votes *election_result, int number_seats, std::string counting_method, std::string quota_type);
 		~ComputeWinners();
+		
+		double get_quota();
+		std::vector<double> get_weights();
+		std::vector<double> get_cand_votes();
 	private:
-		void iteration_step();
-		void exclude_candidate();
+		void transfer_step();
+		int vote_transfer();
+		int exclude_candidate();
 		
 		Votes *election_res;
 		std::string method;
 		std::string quottype;
-		unsigned int seats;
+		int seats;
+		
+		double eps = 0.0001;
+		int max_iter = 100;
 		
 		double quota;
 		std::vector<double> weights;
@@ -18,7 +26,7 @@ class ComputeWinners
 		
 };
 
-ComputeWinners::ComputeWinners(Votes *election_result, unsigned int number_seats, std::string counting_method, std::string quota_type)
+ComputeWinners::ComputeWinners(Votes *election_result, int number_seats, std::string counting_method, std::string quota_type)
 {
 	method = counting_method;
 	quottype = quota_type;
@@ -27,7 +35,22 @@ ComputeWinners::ComputeWinners(Votes *election_result, unsigned int number_seats
 	seats = election_res->get_n_cand();
 }
 
-void ComputeWinners::iteration_step()
+double ComputeWinners::get_quota()
+{
+	return quota;
+}
+
+std::vector<double> ComputeWinners::get_weights()
+{
+	return weights;
+}
+
+std::vector<double> ComputeWinners::get_cand_votes()
+{
+	return cand_votes;
+}
+
+void ComputeWinners::transfer_step()
 {
 	if(method=="gregory"||method=="wright")
 	{
@@ -61,7 +84,7 @@ void ComputeWinners::iteration_step()
 		std::cout<<quottype<<": No such quota type exists.";
 	}
 	
-	for(unsigned int i=0; i < cand_votes.size(); i++)
+	for(int i=0; i < int(cand_votes.size()); i++)
 	{
 		if(cand_votes[i]<quota)
 		{
@@ -74,7 +97,37 @@ void ComputeWinners::iteration_step()
 	}
 }
 
-void ComputeWinners::exclude_candidate()
+int ComputeWinners::vote_transfer()
+{
+	std::vector<double> weights_temp;	
+	int needed_iter;
+	for(int i=0; i<max_iter; i++)
+	{
+		weights_temp = weights;
+		
+		transfer_step();
+		
+		bool converged = false;
+		for(int j=0; j<int(weights.size()); j++)
+		{
+			if(std::abs(weights[j]-weights_temp[j])/weights_temp[j]<eps)
+			{
+				converged = true;
+			}
+		}
+		if(converged)
+		{
+			break;
+		}
+		if(i==max_iter-1)
+		{
+			std::cout<<"Did not converge within maximum number of iterations ("<<max_iter<<")";
+		}
+	}
+}
+
+int ComputeWinners::exclude_candidate()
 {
 	weights[std::distance(cand_votes.begin(), std::min_element(cand_votes.begin(),cand_votes.end()))] = 0.;
+	return std::distance(cand_votes.begin(), std::min_element(cand_votes.begin(),cand_votes.end()));
 }

@@ -1,28 +1,28 @@
 class Votes
 {
 	public:
-		Votes(unsigned int number_candidates);
+		Votes(int number_candidates);
 		~Votes();
 		
-		void read_vote(std::vector<unsigned int> vote);
+		void read_vote(std::vector<int> vote);
 		
 		std::vector<double> count_candidate_votes_gregory(std::vector<double> weights);
 		std::vector<double> count_candidate_votes_meek(std::vector<double> weights);
 		std::vector<double> count_candidate_votes_warren(std::vector<double> weights);
 		
-		unsigned int get_n_cand();
+		int get_n_cand();
 		
 	private:
-		unsigned int n_cand;
-		std::vector<std::vector<unsigned int>> votes;
+		int n_cand;
+		std::vector<std::vector<int>> votes;
 };
 
-Votes::Votes(unsigned int number_candidates)
+Votes::Votes(int number_candidates)
 {
 	n_cand = number_candidates;
 }
 
-void Votes::read_vote(std::vector<unsigned int>vote)
+void Votes::read_vote(std::vector<int>vote)
 {
 	votes.push_back(vote);
 }
@@ -33,17 +33,17 @@ std::vector<double> Votes::count_candidate_votes_gregory(std::vector<double> wei
 
 std::vector<double> Votes::count_candidate_votes_meek(std::vector<double> weights)
 {
-	if(weights.size() != n_cand)
+	if(int(weights.size()) != n_cand)
 	{
 		std::cout<<"Number of weights does not match number of candidates.";
 	}
 	
 	std::vector<double> cand_votes(n_cand, 0.);
 	
-	for(unsigned int i=0; i < votes.size(); i++)
+	for(int i=0; i < int(votes.size()); i++)
 	{
 		double r = 1.;
-		for(unsigned int j=0; j < votes[i].size(); j++)
+		for(int j=0; j < int(votes[i].size()); j++)
 		{
 			if(votes[i][j]<n_cand)
 			{
@@ -61,17 +61,17 @@ std::vector<double> Votes::count_candidate_votes_meek(std::vector<double> weight
 
 std::vector<double> Votes::count_candidate_votes_warren(std::vector<double> weights)
 {
-	if(weights.size() != n_cand)
+	if(int(weights.size()) != n_cand)
 	{
 		std::cout<<"Number of weights does not match number of candidates.";
 	}
 	
 	std::vector<double> cand_votes(n_cand, 0.);
 	
-	for(unsigned int i=0; i < votes.size(); i++)
+	for(int i=0; i < int(votes.size()); i++)
 	{
 		double r = 1.;
-		for(unsigned int j=0; j < votes[i].size(); j++)
+		for(int j=0; j < int(votes[i].size()); j++)
 		{
 			if(votes[i][j]<n_cand)
 			{
@@ -87,7 +87,7 @@ std::vector<double> Votes::count_candidate_votes_warren(std::vector<double> weig
 	return cand_votes;
 }
 
-unsigned int Votes::get_n_cand()
+int Votes::get_n_cand()
 {
 	return n_cand;
 }
