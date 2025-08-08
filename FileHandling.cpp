@@ -9,8 +9,8 @@ class FileHandling
 	private:
 		std::string input_file;
 		std::string output_file;
-		std::fstream file_in ;
-		std::fstream file_out ;
+		std::fstream file_in;
+		std::fstream file_out;
 };
 
 
@@ -32,6 +32,28 @@ std::vector<std::vector<int>> FileHandling::read_input_file()
     
     std::string line;
     
+    int i=1;
+    while(std::getline(file_in, line))
+    {
+		std::stringstream line_stream(line);
+		std::string temp;
+		std::vector<int> vote;
+		while(std::getline(line_stream, temp, ','))
+		{
+			try
+			{
+				vote.push_back(std::stoi(temp)-1);
+			}
+			catch(const std::invalid_argument &e)
+			{
+				std::cout<<"Invalid entry in vote "<<i<<".\n";
+			}
+		}
+		votes.push_back(vote);
+		i++;
+	} 
+    
+    file_in.close();
     
     return votes;
 }

@@ -60,7 +60,7 @@ std::vector<double> Votes::count_candidate_votes_gregory(std::vector<double> wei
 			}
 			else
 			{
-				std::cout<<"Invalid entry at position "<<j<<" of vote "<<i;
+				std::cout<<"Invalid entry at position "<<j<<" of vote "<<i<<".\n";
 			}
 			if(r<1e-20)
 			{
@@ -92,7 +92,7 @@ std::vector<double> Votes::count_candidate_votes_meek(std::vector<double> weight
 			}
 			else
 			{
-				std::cout<<"Invalid entry at position "<<j<<" of vote "<<i;
+				std::cout<<"Invalid entry at position "<<j<<" of vote "<<i<<".\n";
 			}
 			if(r<1e-20)
 			{
@@ -124,7 +124,7 @@ std::vector<double> Votes::count_candidate_votes_warren(std::vector<double> weig
 			}
 			else
 			{
-				std::cout<<"Invalid entry at position "<<j<<" of vote "<<i;
+				std::cout<<"Invalid entry at position "<<j<<" of vote "<<i<<".\n";
 			}
 			if(r<1e-20)
 			{
