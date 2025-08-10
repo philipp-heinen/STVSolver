@@ -2,10 +2,10 @@ class Compute
 {
 	public:
 		Compute(Votes *election_result, int number_seats, std::string counting_method, std::string quota_type, bool random);
-		//~Compute();
 		
 		void count_votes();
 		void compute_quota();
+		void compute_quota(double total_vote);
 		int vote_transfer();
 		int exclude_candidate();		
 		
@@ -23,16 +23,18 @@ class Compute
 		std::string quottype;
 		int seats;
 		int n_cand;
+		int n_votes;
 		
 		double eps = 0.0001;
-		int max_iter = 100;
+		int max_iter = 500;
 		
 		bool rand;
 		
 		double quota;
 		std::vector<double> weights;
 		std::vector<double> cand_votes;
-		std::vector<std::vector<bool>> vote_contributing;
+		std::vector<std::vector<bool>> contributing_votes;
+		std::vector<std::vector<bool>> eligible_votes;
 		
 };
 
@@ -43,6 +45,7 @@ Compute::Compute(Votes *election_result, int number_seats, std::string counting_
 	election_res = election_result;
 	seats = number_seats;
 	n_cand = election_result->get_n_cand();
+	n_votes = election_result->get_n_votes();
 	
 	rand = random;
 	
@@ -50,7 +53,9 @@ Compute::Compute(Votes *election_result, int number_seats, std::string counting_
 	
 	if(method=="gregory")
 	{
-		vote_contributing.resize(election_result->get_n_votes(),std::vector<bool>(n_cand));
+		eligible_votes.resize(election_result->get_n_votes(),std::vector<bool>(n_cand, true));
+		contributing_votes.resize(election_result->get_n_votes(),std::vector<bool>(n_cand, false));
+		compute_quota(double(n_votes));
 	}
 }
 
@@ -99,7 +104,7 @@ void Compute::count_votes()
 {
 	if(method=="gregory")
 	{
-		cand_votes = election_res->count_candidate_votes_gregory(weights, vote_contributing, &vote_contributing);
+		cand_votes = election_res->count_candidate_votes_gregory(weights, eligible_votes, &contributing_votes);
 	}
 	else if(method=="meek")
 	{
@@ -118,7 +123,23 @@ void Compute::count_votes()
 void Compute::compute_quota()
 {
 	double total_vote = std::reduce(cand_votes.begin(), cand_votes.end());
-	
+
+	if(quottype=="hare")
+	{
+		quota = total_vote/double(seats);
+	}
+	else if(quottype=="droop")
+	{
+		quota = total_vote/double(seats+1);
+	}
+	else
+	{
+		std::cout<<quottype<<": No such quota type exists.";
+	}
+}	
+
+void Compute::compute_quota(double total_vote)
+{
 	if(quottype=="hare")
 	{
 		quota = total_vote/double(seats);
@@ -136,59 +157,90 @@ void Compute::compute_quota()
 void Compute::transfer_step()
 {
 	count_votes();
-	
 	compute_quota();
 	
-	for(int i=0; i < int(cand_votes.size()); i++)
+	for(int i=0; i < n_cand; i++)
 	{
-		if(cand_votes[i]>=quota)
+		if(cand_votes[i]>quota)
 		{
 			weights[i] *= quota/cand_votes[i];
 		}
 	}
 }
 
+
 int Compute::vote_transfer()
 {
-	std::vector<double> weights_temp;	
-	int needed_iter;
-	for(int i=0; i<max_iter; i++)
+	if(method=="warren"||method=="meek")
 	{
-		needed_iter = i;
-		
-		weights_temp = weights;
-		
-		transfer_step();
-		
-		bool converged = true;
-		for(int j=0; j<int(weights.size()); j++)
+		std::vector<double> weights_temp;	
+		int needed_iter;
+		for(int i=0; i<max_iter; i++)
 		{
-			if(std::abs(weights_temp[j])>1e-8)
+			needed_iter = i;
+			
+			weights_temp = weights;
+			
+			transfer_step();
+			
+			bool converged = true;
+			for(int j=0; j<int(weights.size()); j++)
 			{
-				if(std::abs(weights[j]-weights_temp[j])/weights_temp[j]>eps)
+				if(std::abs(weights_temp[j])>1e-8)
 				{
-					converged = false;
+					if(std::abs(weights[j]-weights_temp[j])/weights_temp[j]>eps)
+					{
+						converged = false;
+					}
+				}
+				else
+				{
+					if(std::abs(weights[j]-weights_temp[j])>1e-8)
+					{
+						converged = false;
+					}
 				}
 			}
-			else
+			if(converged)
 			{
-				if(std::abs(weights[j]-weights_temp[j])>1e-8)
-				{
-					converged = false;
-				}
+				break;
+			}
+			if(i==max_iter-1)
+			{
+				std::cout<<"Did not converge within maximum number of iterations ("<<max_iter<<")"<<std::endl;
 			}
 		}
-		if(converged)
-		{
-			break;
-		}
-		if(i==max_iter-1)
-		{
-			std::cout<<"Did not converge within maximum number of iterations ("<<max_iter<<")"<<std::endl;
-		}
+		
+		count_votes();
+		compute_quota();
+		
+		return needed_iter+1;
 	}
-	return needed_iter+1;
+	else
+	{
+		count_votes();
+		
+		for(int i=0; i < n_cand; i++)
+		{
+			if(cand_votes[i]>quota+1e-10)
+			{
+				weights[i] *= quota/cand_votes[i];
+				for(int j=0; j<n_votes; j++)
+				{
+					if(not contributing_votes[j][i])
+					{
+						eligible_votes[j][i] = false;
+					}
+				}
+			}
+		}
+		
+		count_votes();
+		
+		return 1;
+	}
 }
+
 
 int Compute::exclude_candidate()
 {
@@ -225,5 +277,12 @@ int Compute::exclude_candidate()
 	}
 
 	weights[excluded_cand] = 0.;
+	
+	count_votes();
+	if(method!="gregory")
+	{
+		compute_quota();
+	}	
+	
 	return excluded_cand;
 }

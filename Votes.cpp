@@ -2,7 +2,6 @@ class Votes
 {
 	public:
 		Votes(int number_candidates);
-		//~Votes();
 		
 		void read_vote(std::vector<int> vote_vector);
 		void read_votes(std::vector<std::vector<int>> votes_vector);
@@ -36,11 +35,19 @@ void Votes::read_votes(std::vector<std::vector<int>> votes_vector)
 	votes = votes_vector;
 }
 
-std::vector<double> Votes::count_candidate_votes_gregory(std::vector<double> weights, std::vector<std::vector<bool>> vote_contributing, std::vector<std::vector<bool>> *vote_contributing_out)
+std::vector<double> Votes::count_candidate_votes_gregory(std::vector<double> weights, std::vector<std::vector<bool>> eligible_votes, std::vector<std::vector<bool>> *contributing_votes)
 {
 	if(int(weights.size()) != n_cand)
 	{
 		std::cout<<"Number of weights does not match number of candidates.";
+	}
+	
+	for(int i=0; i<int(votes.size()); i++)
+	{
+		for(int j=0; j<n_cand; j++)
+		{
+			(*contributing_votes)[i][j] = false;
+		}
 	}
 	
 	std::vector<double> cand_votes(n_cand, 0.);
@@ -52,9 +59,13 @@ std::vector<double> Votes::count_candidate_votes_gregory(std::vector<double> wei
 		{
 			if(votes[i][j]<n_cand)
 			{
-				if(vote_contributing[i][votes[i][j]])
+				if(eligible_votes[i][votes[i][j]])
 				{
 					cand_votes[votes[i][j]] += r*weights[votes[i][j]];
+					if(r*weights[votes[i][j]]>0.)
+					{
+						(*contributing_votes)[i][votes[i][j]] = true;
+					}
 					r *= 1.-weights[votes[i][j]];
 				}
 			}
